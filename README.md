@@ -1,7 +1,7 @@
 # pysweeper
 Repository for minesweeper made in Python
 
-This game a recreation of the classical windows game "Minesweeper" in the hopes if bringing it back to life.
+This game is a recreation of the classical windows game "Minesweeper" in the hopes if bringing it back to life.
 
 It also contains modes of gameplay and various settings to modify (difficulty, board size, etc.).
 
