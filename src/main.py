@@ -128,72 +128,90 @@ class unBoton:
                     caches[-1][self.fils + row, self.cols + col] = buttons[self.fils + row][self.cols + col].bombs_around
                     buttons[self.fils + row][self.cols + col].hacer()
 
-def GenerateWindow():
-    root = Tk()
-    root.title('Pysweeper')
-    root.resizable(False, False)
-    im = Image.open(resource_path(path))
-    photo = ImageTk.PhotoImage(im)
-    root.wm_iconphoto(True, photo)
-    WINDOW_HEIGHT = 350
-    WINDOW_WIDTH = 500
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-    x_cordinate = int((screen_width/2) - (WINDOW_WIDTH/2))
-    y_cordinate = int((screen_height/2) - (WINDOW_HEIGHT/2))
-    root.geometry("{}x{}+{}+{}".format(WINDOW_WIDTH, WINDOW_HEIGHT, x_cordinate, y_cordinate))
-    PAD_X = 25
-    PAD_Y = 25
-    
-    return root
-    
+class Game:
+    def __init__(self):
+        self.mines = self.GenerateWindow()
 
-def StartGame():
-    global BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT
-    mines = GenerateWindow()
-    
-    cols = 16
-    fils = 16
-    difficulty = 1
-    bombs = ceil(difficulty*10**(log(cols)*log(fils)))
-    mines.geometry(f"{BUTTONS_SIZE*cols}x{BUTTONS_SIZE*fils + STATS_HEIGHT}+{(get_monitors()[0].width - BUTTONS_SIZE*cols)//2}+{(get_monitors()[0].height - (BUTTONS_SIZE*fils + STATS_HEIGHT))//2}")
-    mines.resizable(True, True)
+    def GenerateWindow(self, ):
+        root = Tk()
+        root.title('Pysweeper')
+        root.resizable(False, False)
+        self.im = Image.open(resource_path(path))
+        self.photo = ImageTk.PhotoImage(self.im)
+        root.wm_iconphoto(True, self.photo)
+        self.WINDOW_HEIGHT = 350
+        self.WINDOW_WIDTH = 500
+        self.screen_width = root.winfo_screenwidth()
+        self.screen_height = root.winfo_screenheight()
+        self.x_cordinate = int((self.screen_width/2) - (self.WINDOW_WIDTH/2))
+        self.y_cordinate = int((self.screen_height/2) - (self.WINDOW_HEIGHT/2))
+        root.geometry("{}x{}+{}+{}".format(self.WINDOW_WIDTH, self.WINDOW_HEIGHT, self.x_cordinate, self.y_cordinate))
+        self.PAD_X = 25
+        self.PAD_Y = 25
+        return root
 
-    stats = Frame(master=mines, height=STATS_HEIGHT)
-    stats.grid(column=0, row=0)
+    def RestartGame(self, ):
+        pass
 
-    matrix = Frame(master=mines)
-    matrix.grid(column=0, row=1)
+    def GenerateCONSTANTS(self,):
+        self.BOMB_TICK = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_tick.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+        self.BOMB_BOOM = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_boom.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+        self.RED_FLAG = ImageTk.PhotoImage(Image.open("src\\assets\\red_flag.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+        self.FONT = font.Font(family="Helvetica", size=7, weight='bold')
+        self.RESET_ALL = Button(self.stats, text="Reset Settings", command=lambda: print("Settings reset..."))
+        self.RESET_ALL.pack(side=LEFT)
+        self.RESET_GAME = Button(self.stats, text="Start New Game", command=lambda: self.RestartGame())
+        self.RESET_GAME.pack(side=RIGHT)
+        return self.BOMB_TICK, self.BOMB_BOOM, self.RED_FLAG, self.FONT, self.RESET_ALL, self.RESET_GAME
 
-    BOMB_TICK = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_tick.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
-    BOMB_BOOM = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_boom.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
-    RED_FLAG = ImageTk.PhotoImage(Image.open("src\\assets\\red_flag.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
-    FONT = font.Font(family="Helvetica", size=7, weight='bold')
-    RESET_ALL = Button(stats, text="Reset Settings", command=lambda:print("Settings reset..."))
-    RESET_ALL.pack(side=LEFT)
-    RESET_GAME = Button(stats, text="Start New Game", command=lambda:print("Starting new game..."))
-    RESET_GAME.pack(side=RIGHT)
-    caches = [{}]
-    buttons = [[unBoton(fils=fil, cols=col, x=cols, y=fils, butt=Button(master=matrix)) for col in range(cols)] for fil in range(fils)]
-    Buttons = Botones(buttons, caches)
+    def GenerateButtonGrid(self, ):
+        caches = [{}]
+        buttons = [[unBoton(fils=fil, cols=col, x=self.cols, y=self.fils, butt=Button(master=self.matrix)) for col in range(self.cols)] for fil in range(self.fils)]
+        self.Buttons = Botones(buttons, caches)
+        for row in self.Buttons.buttons:
+            for button in row:
+                button.parent = self.Buttons
+                button.butt.bind("<Button-3>", right_click)
+        while self.bombs != 0:
+            x,y = r(0,self.cols-1),r(0,self.fils-1)
+            if self.Buttons.buttons[y][x].mines == 0:
+                self.Buttons.buttons[y][x].mines = 1
+                self.bombs -= 1
+        for fil in range(self.fils):
+            for col in range(self.cols):
+                self.Buttons.buttons[fil][col].bombs_count()
+                self.Buttons.buttons[fil][col].butt.grid(column=col, row=fil+1)
 
-    for row in Buttons.buttons:
-        for button in row:
-            button.parent = Buttons
-            button.butt.bind("<Button-3>", right_click)
+    def SetSettings(self, cols=16, fils=16, difficulty=1, bombs=None, ):
+        self.cols = 16
+        self.fils = 16
+        self.difficulty = 1
+        self.bombs = ceil(self.difficulty*10**(log(self.cols)*log(self.fils))) if bombs == None else bombs
+        self.mines.geometry(f"{BUTTONS_SIZE*self.cols}x{BUTTONS_SIZE*self.fils + STATS_HEIGHT}+{(get_monitors()[0].width - BUTTONS_SIZE*self.cols)//2}+{(get_monitors()[0].height - (BUTTONS_SIZE*self.fils + STATS_HEIGHT))//2}")
+        self.mines.resizable(True, True)
 
-    while bombs != 0:
-        x,y = r(0,cols-1),r(0,fils-1)
-        if Buttons.buttons[y][x].mines == 0:
-            Buttons.buttons[y][x].mines = 1
-            bombs -= 1
+        self.stats = Frame(master=self.mines, height=STATS_HEIGHT)
+        self.stats.grid(column=0, row=0)
 
-    for fil in range(fils):
-        for col in range(cols):
-            Buttons.buttons[fil][col].bombs_count()
-            Buttons.buttons[fil][col].butt.grid(column=col, row=fil+1)
+        self.matrix = Frame(master=self.mines)
+        self.matrix.grid(column=0, row=1)
+        
+        return self.GenerateCONSTANTS()
+        
 
-    mines.mainloop()
+    def StartGame(self, ):
+        global BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT, RESET_ALL, RESET_GAME
+        
+        BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT, RESET_ALL, RESET_GAME = self.SetSettings()
+
+        self.GenerateButtonGrid()
+
+        self.mines.mainloop()
+
+
+
+
 
 if __name__ == "__main__":
-    StartGame()
+    game = Game()
+    game.StartGame()
