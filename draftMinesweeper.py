@@ -7,8 +7,7 @@ Created on Wed Oct 23 00:13:29 2019
 
 # minesweeper
 
-from tkinter import Button, Tk, Label, Frame, font, DISABLED, NORMAL, CENTER, LEFT, RIGHT 
-from turtle import left, position
+from tkinter import Button, Tk, Label, Frame, font, DISABLED, NORMAL, CENTER, LEFT, RIGHT
 from PIL import ImageTk, Image
 from random import randint as r
 from screeninfo import get_monitors
