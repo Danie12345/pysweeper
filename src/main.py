@@ -5,14 +5,30 @@ Created on Wed Oct 23 00:13:29 2019
 @author: daniel
 """
 
-# minesweeper
+# pysweeper
 
+import os
+import sys
 from tkinter import Button, Tk, Label, Frame, font, DISABLED, NORMAL, CENTER, LEFT, RIGHT
 from PIL import ImageTk, Image
 from random import randint as r
 from screeninfo import get_monitors
 from math import log10 as log
 from math import ceil
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+try:
+    import iconpath
+    path = 'src\\assets\\fave.ico'
+except:
+    path = 'assets\\fave.ico'
 
 
 IMG_SCALE = 14
@@ -112,9 +128,30 @@ class unBoton:
                     caches[-1][self.fils + row, self.cols + col] = buttons[self.fils + row][self.cols + col].bombs_around
                     buttons[self.fils + row][self.cols + col].hacer()
 
+def GenerateWindow():
+    root = Tk()
+    root.title('Pysweeper')
+    root.resizable(False, False)
+    im = Image.open(resource_path(path))
+    photo = ImageTk.PhotoImage(im)
+    root.wm_iconphoto(True, photo)
+    WINDOW_HEIGHT = 350
+    WINDOW_WIDTH = 500
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    x_cordinate = int((screen_width/2) - (WINDOW_WIDTH/2))
+    y_cordinate = int((screen_height/2) - (WINDOW_HEIGHT/2))
+    root.geometry("{}x{}+{}+{}".format(WINDOW_WIDTH, WINDOW_HEIGHT, x_cordinate, y_cordinate))
+    PAD_X = 25
+    PAD_Y = 25
+    
+    return root
+    
+
 def StartGame():
     global BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT
-    mines = Tk()
+    mines = GenerateWindow()
+    
     cols = 16
     fils = 16
     difficulty = 1
@@ -128,9 +165,9 @@ def StartGame():
     matrix = Frame(master=mines)
     matrix.grid(column=0, row=1)
 
-    BOMB_TICK = ImageTk.PhotoImage(Image.open("bomb_tick.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
-    BOMB_BOOM = ImageTk.PhotoImage(Image.open("bomb_boom.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
-    RED_FLAG = ImageTk.PhotoImage(Image.open("red_flag.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+    BOMB_TICK = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_tick.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+    BOMB_BOOM = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_boom.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
+    RED_FLAG = ImageTk.PhotoImage(Image.open("src\\assets\\red_flag.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
     FONT = font.Font(family="Helvetica", size=7, weight='bold')
     RESET_ALL = Button(stats, text="Reset Settings", command=lambda:print("Settings reset..."))
     RESET_ALL.pack(side=LEFT)

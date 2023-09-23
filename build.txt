@@ -1,0 +1,1 @@
+pyinstaller --noconfirm --onefile --windowed --icon "src/assets/fave.ico" --name "inventory-salvage" --clean --paths "src/assets/*.ico" --add-data "src/assets/fave.ico;assets" --exclude-module iconpath "src/main.py"

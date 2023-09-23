@@ -1,0 +1,9 @@
+venv/
+
+build/
+
+*.dat
+
+.env
+
+src/__pycache__
