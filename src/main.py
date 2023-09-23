@@ -9,12 +9,14 @@ Created on Wed Oct 23 00:13:29 2019
 
 import os
 import sys
-from tkinter import Button, Tk, Label, Frame, font, DISABLED, NORMAL, CENTER, LEFT, RIGHT
+from tkinter import Button, Tk, Label, Frame, font, LEFT, RIGHT
 from PIL import ImageTk, Image
 from random import randint as r
 from screeninfo import get_monitors
 from math import log10 as log
 from math import ceil
+from botones import Botones, unBoton
+from events import nohover, right_click, mouse_wheel_click
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -38,95 +40,6 @@ BUTTONS_SIZE = 26
 NUM_COLORS = {1:"Red", 2:"Orange", 3:"Green", 4:"Cyan", 5:"Blue", 6:"Magenta", 7:"Purple", 8:"Indigo"}
 get_rgb = lambda rgb: "#%02x%02x%02x" % rgb
 
-def nohover(event):
-    pass
-
-def right_click(event):
-    label = Label(event.widget, image=RED_FLAG, anchor=CENTER)
-    if event.widget.parent.clicks < 1:
-        label.pack()
-        event.pressedType = "FLAG"
-        event.widget.parent.clicks += 1
-        event.widget['state'] = DISABLED
-    else:
-        label.destroy()
-        event.widget.parent.clicks -= 1
-        event.pressedType = "None"
-        event.widget['state'] = NORMAL
-    event.widget.update()
-    
-
-def mouse_wheel_click(event):
-    if event.pressedType == "None":
-        label = Label(event.widget, image=RED_FLAG, anchor=CENTER)
-        label.pack()
-        event.pressedType = "FLAG"
-
-class Botones:
-    def __init__(self, buttons, caches):
-        self.buttons = buttons
-        self.caches = caches
-
-class unBoton:
-    def __init__(self, fils=1, cols=1, x=1, y=1, butt=None):
-        self.fils = fils
-        self.cols = cols
-        self.clicks = 0
-        self.x = x
-        self.y = y
-        self.pressedType = "None"
-        self.bombs_around = 0
-        self.shown = False
-        
-        self.mines = 0
-        self.text = " {} ".format("   ")
-        self.butt = butt
-        self.butt.configure(text=self.text, command=self.hacer)
-        self.butt.parent = self
-        self.cache = {}
-    
-    def hacer(self):
-        buttons = self.parent.buttons
-        caches = self.parent.caches
-        if self.clicks == 0:
-            self.clicks += 1
-            if self.mines:
-                for row in buttons:
-                    for button in row:
-                        if button.mines:
-                            if not button.shown:
-                                button.shown = True
-                                label = Label(button.butt, image=BOMB_BOOM, anchor=CENTER)
-                                label.pack()
-                        button.butt['state'] = DISABLED
-            else:
-                if self.bombs_around == 0:
-                    self.discover()
-                else:
-                    self.text = f" {self.bombs_around} "
-                    caches[-1][self.fils, self.cols] = buttons[self.fils][self.cols].bombs_around
-                    label = Label(self.butt, text=self.text if self.text != " 0 " else "     ", font=FONT, bg=get_rgb((240,240,240)), fg=NUM_COLORS[self.bombs_around], anchor=CENTER)
-                    label.pack(padx=0, pady=0)
-                self.butt['state'] = DISABLED
-            buttons[self.fils][self.cols] = self       
-    
-    def bombs_count(self):
-        buttons = self.parent.buttons
-        total = 0
-        for row in range(-1,2):
-            for col in range(-1,2):
-                if (0 <= self.fils + row < len(buttons)) and (0 <= self.cols + col < len(buttons[0])):
-                    total += buttons[self.fils + row][self.cols + col].mines
-        self.bombs_around = total
-    
-    def discover(self):
-        buttons = self.parent.buttons
-        caches = self.parent.caches
-        for row in range(-1,2):
-            for col in range(-1,2):
-                if (0 <= self.fils + row < len(buttons)) and (0 <= self.cols + col < len(buttons[0])):
-                    caches[-1][self.fils + row, self.cols + col] = buttons[self.fils + row][self.cols + col].bombs_around
-                    buttons[self.fils + row][self.cols + col].hacer()
 
 class Game:
     def __init__(self):
@@ -151,7 +64,10 @@ class Game:
         return root
 
     def RestartGame(self, ):
-        pass
+        self.Buttons = None
+        self.matrix.destroy()
+        self.SetSettings(cols=self.cols, fils=self.fils, difficulty=self.difficulty, bombs=self.bombs, resizable=self.mines.resizable())
+        self.GenerateButtonGrid()
 
     def GenerateCONSTANTS(self,):
         self.BOMB_TICK = ImageTk.PhotoImage(Image.open("src\\assets\\bomb_tick.png").resize((IMG_SCALE,IMG_SCALE), Image.ANTIALIAS))
@@ -165,13 +81,30 @@ class Game:
         return self.BOMB_TICK, self.BOMB_BOOM, self.RED_FLAG, self.FONT, self.RESET_ALL, self.RESET_GAME
 
     def GenerateButtonGrid(self, ):
+        self.Buttons = Botones([[]], [])
         caches = [{}]
-        buttons = [[unBoton(fils=fil, cols=col, x=self.cols, y=self.fils, butt=Button(master=self.matrix)) for col in range(self.cols)] for fil in range(self.fils)]
+        buttons = [[
+                unBoton(
+                    fils=fil, cols=col, x=self.cols, y=self.fils, butt=Button(master=self.matrix),
+                    PARAMS = {
+                        'NUM_COLORS': NUM_COLORS, 
+                        'get_rgb': get_rgb, 
+                        'BOMB_TICK': self.BOMB_TICK,
+                        'BOMB_BOOM': self.BOMB_BOOM,
+                        'RED_FLAG': self.RED_FLAG,
+                        'FONT': self.FONT,
+                        'RESET_ALL': self.RESET_ALL,
+                        'RESET_GAME': self.RESET_GAME
+                    }
+                ) for col in range(self.cols)
+            ] for fil in range(self.fils)
+        ]
         self.Buttons = Botones(buttons, caches)
         for row in self.Buttons.buttons:
             for button in row:
                 button.parent = self.Buttons
-                button.butt.bind("<Button-3>", right_click)
+                button.butt.bind("<Button-3>", lambda event: right_click(event, image=self.RED_FLAG))
+                button.butt.bind("<Button-2>", lambda event: mouse_wheel_click(event, image=self.BOMB_TICK))
         while self.bombs != 0:
             x,y = r(0,self.cols-1),r(0,self.fils-1)
             if self.Buttons.buttons[y][x].mines == 0:
@@ -182,13 +115,13 @@ class Game:
                 self.Buttons.buttons[fil][col].bombs_count()
                 self.Buttons.buttons[fil][col].butt.grid(column=col, row=fil+1)
 
-    def SetSettings(self, cols=16, fils=16, difficulty=1, bombs=None, ):
+    def SetSettings(self, cols=16, fils=16, difficulty=1, bombs=None, resizable=(False, False)):
         self.cols = 16
         self.fils = 16
         self.difficulty = 1
         self.bombs = ceil(self.difficulty*10**(log(self.cols)*log(self.fils))) if bombs == None else bombs
         self.mines.geometry(f"{BUTTONS_SIZE*self.cols}x{BUTTONS_SIZE*self.fils + STATS_HEIGHT}+{(get_monitors()[0].width - BUTTONS_SIZE*self.cols)//2}+{(get_monitors()[0].height - (BUTTONS_SIZE*self.fils + STATS_HEIGHT))//2}")
-        self.mines.resizable(True, True)
+        self.mines.resizable(*resizable)
 
         self.stats = Frame(master=self.mines, height=STATS_HEIGHT)
         self.stats.grid(column=0, row=0)
@@ -197,15 +130,13 @@ class Game:
         self.matrix.grid(column=0, row=1)
         
         return self.GenerateCONSTANTS()
-        
-
-    def StartGame(self, ):
-        global BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT, RESET_ALL, RESET_GAME
-        
-        BOMB_TICK, BOMB_BOOM, RED_FLAG, FONT, RESET_ALL, RESET_GAME = self.SetSettings()
-
+    
+    def GenerateGame(self, ):
+        self.SetSettings()
         self.GenerateButtonGrid()
-
+        
+    def StartGame(self, ):
+        self.GenerateGame()
         self.mines.mainloop()
 
 
